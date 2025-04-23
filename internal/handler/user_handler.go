@@ -2,28 +2,141 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
+	"training-project/internal/dto"
 	"training-project/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
-	userServ service.UserService
+	userService service.UserService
 }
 
-func NewUserHandler(userServ service.UserService) *UserHandler {
-	return &UserHandler{userServ: userServ}
+func NewUserHandler(route *gin.RouterGroup, userService service.UserService) *UserHandler {
+	userHandler := &UserHandler{userService: userService}
+	userAPI := route.Group("/users")
+	{
+		userAPI.GET("/", userHandler.GetAllUsers)
+		userAPI.GET("/id/:id", userHandler.GetUserByID)
+		userAPI.GET("/username/:username", userHandler.GetUserByUsername)
+		userAPI.POST("/", userHandler.CreateUser)
+		userAPI.PUT("/id/:id", userHandler.UpdateUserById)
+		userAPI.DELETE("/id/:id", userHandler.DeleteUserById)
+	}
+	return userHandler
 }
 
 func (userHandler *UserHandler) GetAllUsers(ctx *gin.Context) {
 	rqCtx := ctx.Request.Context()
-	users, err := userHandler.userServ.GetAllUsers(rqCtx)
+	users, err := userHandler.userService.FindAllUsers(rqCtx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": dto.ToUserResDTOs(users),
+	})
+}
 
-	ctx.JSON(http.StatusOK, users)
+func (userHandler *UserHandler) GetUserByID(ctx *gin.Context) {
+	rqCtx := ctx.Request.Context()
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "id is not valid",
+		})
+	}
+	user, err := userHandler.userService.FindUserById(rqCtx, int64(id))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": dto.ToUserResDTO(user),
+	})
+}
+
+func (userHandler *UserHandler) GetUserByUsername(ctx *gin.Context) {
+	rqCtx := ctx.Request.Context()
+	username := ctx.Param("username")
+	user, err := userHandler.userService.FindUserByUsername(rqCtx, username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": dto.ToUserResDTO(user),
+	})
+}
+
+func (userHandler *UserHandler) CreateUser(ctx *gin.Context) {
+	rqCtx := ctx.Request.Context()
+	var userCreateReqDTO dto.UserCreateReqDTO
+	if err := ctx.ShouldBind(&userCreateReqDTO); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if err := userHandler.userService.CreateUser(rqCtx, &userCreateReqDTO); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "create user successful",
+	})
+}
+
+func (userHandler *UserHandler) UpdateUserById(ctx *gin.Context) {
+	rqCtx := ctx.Request.Context()
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "id is not valid",
+		})
+	}
+	var userUpdateReqDTO dto.UserUpdateReqDTO
+	if err := ctx.ShouldBind(&userUpdateReqDTO); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if err := userHandler.userService.UpdateUserById(rqCtx, int64(id), &userUpdateReqDTO); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "update user successful",
+	})
+}
+
+func (userHandler *UserHandler) DeleteUserById(ctx *gin.Context) {
+	rqCtx := ctx.Request.Context()
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "id is not valid",
+		})
+	}
+	if err := userHandler.userService.DeleteUserById(rqCtx, int64(id)); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "delete user successful",
+	})
 }
