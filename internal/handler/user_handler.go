@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"training-project/internal/dto"
 	"training-project/internal/service"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,32 +15,47 @@ type UserHandler struct {
 	userService service.UserService
 }
 
-func NewUserHandler(route *gin.RouterGroup, userService service.UserService) *UserHandler {
+func NewUserHandler(api huma.API, userService service.UserService) *UserHandler {
 	userHandler := &UserHandler{userService: userService}
-	userAPI := route.Group("/users")
-	{
-		userAPI.GET("/", userHandler.GetAllUsers)
-		userAPI.GET("/id/:id", userHandler.GetUserByID)
-		userAPI.GET("/username/:username", userHandler.GetUserByUsername)
-		userAPI.POST("/", userHandler.CreateUser)
-		userAPI.PUT("/id/:id", userHandler.UpdateUserById)
-		userAPI.DELETE("/id/:id", userHandler.DeleteUserById)
-	}
+	// userAPI := route.Group("/users")
+	// {
+	// 	userAPI.GET("/", userHandler.GetAllUsers)
+	// 	userAPI.GET("/id/:id", userHandler.GetUserByID)
+	// 	userAPI.GET("/username/:username", userHandler.GetUserByUsername)
+	// 	userAPI.POST("/", userHandler.CreateUser)
+	// 	userAPI.PUT("/id/:id", userHandler.UpdateUserById)
+	// 	userAPI.DELETE("/id/:id", userHandler.DeleteUserById)
+	// }
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodGet,
+		Path:        "/users",
+		Summary:     "Sumary ...",
+		Description: "Description ...",
+	}, userHandler.GetAllUsers)
 	return userHandler
 }
 
-func (userHandler *UserHandler) GetAllUsers(ctx *gin.Context) {
-	rqCtx := ctx.Request.Context()
-	users, err := userHandler.userService.FindAllUsers(rqCtx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
+func (userHandler *UserHandler) GetAllUsers(ctx context.Context, req *struct{}) (*struct {
+	Body struct {
+		Data []dto.UserResDTO `json:"data"`
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"data": dto.ToUserResDTOs(users),
-	})
+}, error) {
+	users, err := userHandler.userService.FindAllUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// res := &dto.GetAllUsersResponse{}
+	// res.Body.Data = dto.ToUserResDTOs(users)
+	// return res, nil
+
+	res := struct {
+		Body struct {
+			Data []dto.UserResDTO `json:"data"`
+		}
+	}{}
+	res.Body.Data = dto.ToUserResDTOs(users)
+	return &res, nil
 }
 
 func (userHandler *UserHandler) GetUserByID(ctx *gin.Context) {

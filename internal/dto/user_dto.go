@@ -2,6 +2,12 @@ package dto
 
 import "training-project/internal/model"
 
+type GetAllUsersResponse struct {
+	Body struct {
+		Data []UserResDTO `json:"data"`
+	} `json:"body"`
+}
+
 type UserResDTO struct {
 	Id       int64  `json:"id"`
 	Name     string `json:"name"`

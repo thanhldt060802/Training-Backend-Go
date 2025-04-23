@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"training-project/internal/config"
+	"training-project/internal/handler"
+	"training-project/internal/repository"
+	"training-project/internal/service"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
@@ -48,14 +50,25 @@ func main() {
 
 	r := gin.Default()
 
-	api := humagin.New(r, huma.DefaultConfig("Huma + Gin API", "v1.0.0"))
+	humaCfg := huma.DefaultConfig("Huma + Gin API", "v1.0.0")
+	humaCfg.JSONSchemaDialect = ""
+	api := humagin.New(r, humaCfg)
 
-	huma.Register(api, huma.Operation{
-		Method:      http.MethodGet,
-		Path:        "/hello/{name}",
-		Summary:     "Greet someone",
-		Description: "Returns a greeting message",
-	}, HelloHandler)
+	// huma.Register(api, huma.Operation{
+	// 	Method:      http.MethodGet,
+	// 	Path:        "/hello/{name}",
+	// 	Summary:     "Greet someone",
+	// 	Description: "Returns a greeting message",
+	// }, HelloHandler)
+
+	// Initialize repositories
+	userRepository := repository.NewUserRepository(db)
+
+	// Initialize services
+	userService := service.NewUserService(userRepository)
+
+	// Initialize handlers
+	handler.NewUserHandler(api, userService)
 
 	r.Run(":" + config.AppConfig.AppPort)
 
