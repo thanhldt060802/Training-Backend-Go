@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"training-project/internal/config"
 	"training-project/internal/handler"
 	"training-project/internal/repository"
@@ -52,7 +53,25 @@ func main() {
 
 	humaCfg := huma.DefaultConfig("Huma + Gin API", "v1.0.0")
 	humaCfg.JSONSchemaDialect = ""
+	humaCfg.DocsPath = ""
 	api := humagin.New(r, humaCfg)
+
+	r.GET("/docs", func(ctx *gin.Context) {
+		ctx.Data(http.StatusOK, "text/html", []byte(`<!doctype html>
+<html>
+  <head>
+    <title>API Reference</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <script
+      id="api-reference"
+      data-url="/openapi.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>`))
+	})
 
 	// huma.Register(api, huma.Operation{
 	// 	Method:      http.MethodGet,

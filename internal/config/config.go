@@ -25,11 +25,19 @@ func InitConfig() {
 	}
 
 	AppConfig = &Config{
-		AppPort:    os.Getenv("APP_PORT"),
-		DBHost:     os.Getenv("DB_HOST"),
-		DBPort:     os.Getenv("DB_PORT"),
-		DBUser:     os.Getenv("DB_USER"),
-		DBPassword: os.Getenv("DB_PASSWORD"),
-		DBName:     os.Getenv("DB_NAME"),
+		AppPort:    GetEnv("APP_PORT", "8080"),
+		DBHost:     GetEnv("DB_HOST", "localhost"),
+		DBPort:     GetEnv("DB_PORT", "5432"),
+		DBUser:     GetEnv("DB_USER", "postgres"),
+		DBPassword: GetEnv("DB_PASSWORD", "12345678"),
+		DBName:     GetEnv("DB_NAME", "demo_db"),
+	}
+}
+
+func GetEnv(key string, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	} else {
+		return defaultValue
 	}
 }
