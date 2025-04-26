@@ -53,8 +53,12 @@ func (userHandler *UserHandler) GetAllUsers(ctx context.Context, req *struct{}) 
 		Body struct {
 			Data []dto.UserResDTO `json:"data"`
 		}
-	}{}
-	res.Body.Data = dto.ToUserResDTOs(users)
+	}{Body: struct {
+		Data []dto.UserResDTO `json:"data"`
+	}{
+		Data: dto.ToUserResDTOs(users),
+	}}
+	// res.Body.Data = dto.ToUserResDTOs(users)
 	return &res, nil
 }
 
